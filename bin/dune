@@ -1,0 +1,4 @@
+(executable
+ (public_name ochess)
+ (name main)
+ (libraries ochess raylib))
