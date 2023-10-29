@@ -100,15 +100,12 @@ let rec loop state =
             let enter_pressed = is_key_pressed Key.Enter in
             let guess = if mouse_clicked then click_to_guess() else state.guess in
             let time = match guess with
-              | Some _ -> Some (Unix.time() +. 0.5)
+              | Some _ -> Some (Unix.time() +. 0.1)
               | None -> state.time
             in
             let direction =
             if enter_pressed then
                 toggle_direction (state.direction) else state.direction in
             loop { state with direction; time; guess }
-
-      
-
 
 let () = setup () |> loop
