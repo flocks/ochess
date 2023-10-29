@@ -1,32 +1,49 @@
 type direction_t = White | Black
 
-
 type state = {
     position: int;
+    guess: int option;
     direction: direction_t;
+    time: float option;
 }
 
 let generate () =
   let _ = Random.self_init() in
   Random.int(63) + 1
-                  
-let setup () =
-  Raylib.init_window 800 800 "raylib [core] example - basic window";
-  Raylib.set_target_fps 60;
-  {  position = generate(); direction = White }
 
-let draw_board position =
+let cols = ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"]
+let rows = ["1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"]
+
+let convert_position position direction =
+  let open List in
+  let is_last_column = position mod 8 == 0 in
+  let line = (position / 8 ) - (if is_last_column then 1 else 0) in
+  let col = if is_last_column then 7 else (position mod 8) -1 in
+    match direction with
+        | White -> Printf.sprintf "%s%s" (nth cols col) (nth (rev rows) line)
+        | Black -> Printf.sprintf "%s%s" (nth (rev cols) col) (nth rows line)
+
+let padding = 50
+let size = 70 
+
+let setup () =
+  Raylib.init_window 800 800 "OCHESS";
+  Raylib.set_target_fps 60;
+  {  position = generate(); direction = White; guess = None; time = None }
+
+let draw_board position guess =
   let open Raylib in
-  let size = 50 in
-  let padding = 50 in
   let rec draw_row i j count =
     if j > 7 then
       draw_column (i + 1) 0 count
     else
+      let board_color = if (j - i) mod 2 = 0 then Color.white else Color.black in
       let color =
-        if count = position then Color.red
-        else if (j - i) mod 2 = 0 then Color.white
-        else Color.darkgray
+        match guess with
+        | Some g -> if g == count then
+                      if position == g then Color.green else Color.darkgray
+                      else if position == count then Color.red else board_color
+        | None -> board_color
       in
       let x_position = (padding + (size * j)) in
       let y_position =  (padding + (size * i)) in
@@ -45,41 +62,53 @@ let draw_direction direction =
   let open Raylib in
   match direction with
     | White -> draw_text "white" 0 0 20 Color.white
-    | Black -> draw_text "black" 0 0 20 Color.darkgray
+    | Black -> draw_text "black" 0 0 20 Color.black
 
 let toggle_direction direction =
   match direction with
   | White -> Black
   | Black -> White
 
+let click_to_guess () =
+  let open Raylib in
+  let module V = Vector2 in
+  let pos = get_mouse_position() in
+  let x = int_of_float(V.x pos) / size in
+  let y = int_of_float(V.y pos) / size in
+  let pos = (x + 8*(y-1)) in
+  if pos == 0 then None else Some pos
 
 let rec loop state =
-  if Raylib.window_should_close () then Raylib.close_window ()
+  let open Raylib in
+  if window_should_close () then close_window ()
   else
-    let open Raylib in
-    (* set_trace_log_level Debug; *)
-    let mouse_clicked = is_mouse_button_pressed MouseButton.Left in
-    let enter_pressed = is_key_pressed Key.Enter in
-    let direction =
-      if enter_pressed then
-        toggle_direction (state.direction)   
-      else state.direction in
-    let position =
-      if mouse_clicked then
-        generate()
-      else state.position in
-    begin_drawing ();
-        clear_background Color.lightgray;
-        draw_text (string_of_int state.position) 500 200 200 Color.blue;
-        draw_board (state.position);
-        draw_direction (state.direction);
-    end_drawing ();
+    let draw () =
+        begin_drawing ();
+            clear_background Color.lightgray;
+            draw_text (convert_position state.position state.direction) 200 600 200 Color.black;
+            draw_board state.position state.guess;
+            draw_direction (state.direction);
+        end_drawing () in
+    draw();
+    match state.time with
+        | Some t ->
+            if (Unix.time() > t) then
+              loop { state with time = None; guess = None; position = generate() }
+            else loop state
+        | None ->
+            let mouse_clicked = is_mouse_button_pressed MouseButton.Left in
+            let enter_pressed = is_key_pressed Key.Enter in
+            let guess = if mouse_clicked then click_to_guess() else state.guess in
+            let time = match guess with
+              | Some _ -> Some (Unix.time() +. 0.5)
+              | None -> state.time
+            in
+            let direction =
+            if enter_pressed then
+                toggle_direction (state.direction) else state.direction in
+            loop { state with direction; time; guess }
 
-    loop
-      {
-        direction;
-        position;
-      }
+      
+
 
 let () = setup () |> loop
-
