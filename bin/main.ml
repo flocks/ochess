@@ -5,6 +5,7 @@ type state = {
     guess: int option;
     direction: direction_t;
     time: float option;
+    score: int;
 }
 
 let generate () =
@@ -29,7 +30,12 @@ let size = 60
 let setup () =
   Raylib.init_window 800 600 "OCHESS";
   Raylib.set_target_fps 60;
-  {  position = generate(); direction = White; guess = None; time = None }
+  {  position = generate();
+     direction = White;
+     guess = None;
+     time = None;
+     score = 0;
+  }
 
 let draw_board position guess =
   let open Raylib in
@@ -87,7 +93,12 @@ let click_to_guess () =
 let draw_position_to_guess position direction =
   let open Raylib in
   let x = size *  10 in
-  draw_text (convert_position position direction) x 400 80 Color.black
+  draw_text (convert_position position direction) x 200 80 Color.black
+
+let draw_score score =
+  let open Raylib in
+  let x = size * 10 in
+  draw_text (string_of_int score) x 350 50 Color.green
 
 let rec loop state =
   let open Raylib in
@@ -98,6 +109,7 @@ let rec loop state =
             clear_background Color.lightgray;
             draw_board state.position state.guess;
             draw_position_to_guess state.position state.direction;
+            draw_score state.score;
             draw_direction (state.direction);
         end_drawing () in
     draw();
@@ -110,14 +122,18 @@ let rec loop state =
             let mouse_clicked = is_mouse_button_pressed MouseButton.Left in
             let enter_pressed = is_key_pressed Key.Enter in
             let guess = if mouse_clicked then click_to_guess() else state.guess in
+            let score = match guess with
+              | Some p -> if p == state.position then (state.score + 1) else 0
+              | None -> state.score
+            in
             let time = match guess with
-              | Some _ -> Some (Unix.time() +. 0.1)
+              | Some _ -> Some (Unix.time() +. 0.08)
               | None -> state.time
             in
             let direction =
             if enter_pressed then
                 toggle_direction (state.direction) else state.direction in
-            loop { state with direction; time; guess }
+            loop { state with direction; time; guess; score }
 
 
 let () = setup () |> loop
