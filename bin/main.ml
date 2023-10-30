@@ -24,10 +24,10 @@ let convert_position position direction =
         | Black -> Printf.sprintf "%s%s" (nth (rev cols) col) (nth rows line)
 
 let padding = 50
-let size = 70 
+let size = 60 
 
 let setup () =
-  Raylib.init_window 800 800 "OCHESS";
+  Raylib.init_window 800 600 "OCHESS";
   Raylib.set_target_fps 60;
   {  position = generate(); direction = White; guess = None; time = None }
 
@@ -60,9 +60,15 @@ let draw_board position guess =
 
 let draw_direction direction =
   let open Raylib in
+  let y = size  * 9 in
+  let x = padding in
   match direction with
-    | White -> draw_text "white" 0 0 20 Color.white
-    | Black -> draw_text "black" 0 0 20 Color.black
+  | White ->
+      draw_text "white" x y 20 Color.white;
+      draw_text "black" x 20 20 Color.black
+  | Black ->
+      draw_text "black" x y 20 Color.black;
+      draw_text "white" x 20 20 Color.white
 
 let toggle_direction direction =
   match direction with
@@ -78,6 +84,11 @@ let click_to_guess () =
   let pos = (x + 8*(y-1)) in
   if pos == 0 then None else Some pos
 
+let draw_position_to_guess position direction =
+  let open Raylib in
+  let x = size *  10 in
+  draw_text (convert_position position direction) x 400 80 Color.black
+
 let rec loop state =
   let open Raylib in
   if window_should_close () then close_window ()
@@ -85,8 +96,8 @@ let rec loop state =
     let draw () =
         begin_drawing ();
             clear_background Color.lightgray;
-            draw_text (convert_position state.position state.direction) 200 600 200 Color.black;
             draw_board state.position state.guess;
+            draw_position_to_guess state.position state.direction;
             draw_direction (state.direction);
         end_drawing () in
     draw();
@@ -107,5 +118,6 @@ let rec loop state =
             if enter_pressed then
                 toggle_direction (state.direction) else state.direction in
             loop { state with direction; time; guess }
+
 
 let () = setup () |> loop
