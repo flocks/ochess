@@ -85,10 +85,16 @@ let click_to_guess () =
   let open Raylib in
   let module V = Vector2 in
   let pos = get_mouse_position() in
-  let x = int_of_float(V.x pos) / size in
-  let y = int_of_float(V.y pos) / size in
-  let pos = (x + 8*(y-1)) in
-  if pos == 0 then None else Some pos
+  let min = padding in
+  let max = padding + (size * 8) in
+  let x = int_of_float(V.x pos) in
+  let y = int_of_float(V.y pos) in
+  if (x < min) || (x > max) || (y < min) || (y > max) then None
+  else
+  let x_cell = x / size in
+  let y_cell = y / size in
+  let pos = (x_cell + 8*(y_cell-1)) in
+  Some pos
 
 let draw_position_to_guess position direction =
   let open Raylib in
