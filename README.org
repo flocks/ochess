@@ -1,3 +1,9 @@
 * Ochess
 
 Little experimentation with Ocaml and Raylib
+
+[[https://github.com/flocks/ochess/raw/master/demo.gif]]
+
+#+BEGIN_SRC bash
+  dune build && dune exec ochess
+#+END_SRC
